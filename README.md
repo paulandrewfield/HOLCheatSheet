@@ -24,21 +24,26 @@ dbt models, tests, stored procedures and config built on the Snowflake TPCH samp
 
 ### all_models_have_descriptions.sql
 
+'''
 select unique_id
 from {{ info_schema('models') }}
 where description = ''
+'''
 
 ### assert_net_item_sales_amount_positive.sql
 
+'''
 select
    order_key,
    sum(net_item_sales_amount) as amount
 from {{ ref('fct_orders') }}
 group by 1
 having not(amount >= 0)
+'''
 
 ### dim_customers.sql
 
+'''
 with
     customer as (select * from {{ ref("stg_customers") }}),
 
@@ -58,9 +63,11 @@ select
 from customer
 inner join nation on customer.nation_key = nation.notion_key
 inner join region on nation.region_key = region.region_key
+'''
 
 ### monthly_sales.sql
 
+'''
 SELECT
    DATE_TRUNC('month', order_date) AS order_month,
    market_segment,
@@ -71,9 +78,11 @@ GROUP BY
    1, 2
 ORDER BY
    1, 2
+'''
    
 ### stg_nations.sql
 
+'''
 with
 
 source as (
@@ -95,9 +104,11 @@ renamed as (
 )
 
 select * from renamed
+'''
 
 ### stg_regions.sql
 
+'''
 with
 
 source as (
@@ -118,6 +129,7 @@ renamed as (
 )
 
 select * from renamed
+'''
 
 ---
 
