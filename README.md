@@ -233,7 +233,7 @@ models:
     +static_analysis: strict
     +materialized: view
     +access: public
-@paulandrewfield
+
 
 
 ```
