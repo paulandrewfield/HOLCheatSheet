@@ -24,27 +24,100 @@ dbt models, tests, stored procedures and config built on the Snowflake TPCH samp
 
 ### all_models_have_descriptions.sql
 
-Singular dbt test that fails for any model with an empty description (uses the info schema macro).
+select unique_id
+from {{ info_schema('models') }}
+where description = ''
 
 ### assert_net_item_sales_amount_positive.sql
 
-Singular dbt test. Sums net item sales per order key from `fct_orders` and flags negative totals.
+select
+   order_key,
+   sum(net_item_sales_amount) as amount
+from {{ ref('fct_orders') }}
+group by 1
+having not(amount >= 0)
 
 ### dim_customers.sql
 
-Customer dimension model. Joins `customer`, `nation` and `region` CTEs in a final select.
+with
+    customer as (select * from {{ ref("stg_customers") }}),
+
+    nation as (select * from {{ ref("stg_nations") }}),
+
+    region as (select * from {{ ref("stg_regions") }})
+
+select
+    customer.customer_key,
+    customer.name,
+    customer.address,
+    nation,
+    region,
+    customer.phone_number,
+    customer.account_balance,
+    customer.market_segment
+from customer
+inner join nation on customer.nation_key = nation.notion_key
+inner join region on nation.region_key = region.region_key
 
 ### monthly_sales.sql
 
-Monthly revenue model. Truncates order date to month, groups by month and market segment, sums gross item sales, and orders the results.
-
+SELECT
+   DATE_TRUNC('month', order_date) AS order_month,
+   market_segment,
+   SUM(gross_item_sales_amount) AS total_revenue
+FROM
+   {{ ref('fct_orders') }}
+GROUP BY
+   1, 2
+ORDER BY
+   1, 2
+   
 ### stg_nations.sql
 
-Staging model for the TPCH nation table (`source` CTE, then `renamed` CTE).
+with
+
+source as (
+
+   select * from {{ source('tpch', 'nation') }}
+
+),
+
+renamed as (
+
+   select
+       n_nationkey as nation_key,
+       n_name as nation,
+       n_regionkey as region_key,
+       n_comment as nation_comment
+
+   from source
+
+)
+
+select * from renamed
 
 ### stg_regions.sql
 
-Staging model for the TPCH region table (`source` CTE, then `renamed` CTE).
+with
+
+source as (
+
+   select * from {{ source('tpch', 'region') }}
+
+),
+
+renamed as (
+
+   select
+       r_regionkey as region_key,
+       r_name as region,
+       r_comment as region_comment
+
+   from source
+
+)
+
+select * from renamed
 
 ---
 
